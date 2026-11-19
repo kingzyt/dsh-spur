@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Session keep-alive",
+    "description": "Reminds a stopped session to carry on, on a timer; each session has its own switch in the right sidebar, and the main agent ends it with a reply label.",
+    "detail": "docs/DETAIL.md"
+  }
+}

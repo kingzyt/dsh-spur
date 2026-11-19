@@ -1,0 +1,14 @@
+<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M10.2 9.4 7.4 6.9" stroke="#44506B" stroke-width="2.4" stroke-linecap="round" />
+  <path d="M25.8 9.4 28.6 6.9" stroke="#44506B" stroke-width="2.4" stroke-linecap="round" />
+  <circle cx="18" cy="19.8" r="9.4" stroke="#44506B" stroke-width="2.6" />
+  <path d="M18 10.4A9.4 9.4 0 0 1 27.02 17.3" stroke="url(#spur-ring)" stroke-width="2.6" stroke-linecap="round" />
+  <path d="M18 19.8V14.4" stroke="#86B8F5" stroke-width="2.6" stroke-linecap="round" />
+  <path d="M18 19.8H22.3" stroke="#41E1AC" stroke-width="2.6" stroke-linecap="round" />
+  <defs>
+    <linearGradient id="spur-ring" x1="18" y1="10.4" x2="27.02" y2="17.3" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#86B8F5" />
+      <stop offset="1" stop-color="#41E1AC" />
+    </linearGradient>
+  </defs>
+</svg>
