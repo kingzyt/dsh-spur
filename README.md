@@ -1,56 +1,58 @@
-# 会话保活提醒（@kingzyt/dsh-spur）
+# Session keep-alive (@kingzyt/dsh-spur)
 
-DeepSeek Harness 的插件包「会话保活提醒」：在右侧工具区给每个会话一个手动开关。打开之后，会话一停下来就按空闲事件提醒它继续；主智能体在 `spur_reply` 的 reply 参数里填「已经完成所有任务」，这个会话的提醒就关掉，直到你手动重新打开。
+English | [中文](README.zh.md)
 
-它是一份独立的组合包（bundle），住在 DSH 源码树之外。安装只改用户 profile 目录（`$DSH_HOME/profiles/<profile>` 的 `package.json`、`node_modules` 与锁文件），DSH 仓库本身一个字节都不动。
+A DeepSeek Harness plugin that gives every session a manual switch in the right sidebar. Once the switch is on, a stopped session is reminded to carry on as soon as it goes idle; the main agent writes 「已经完成所有任务」 in the `reply` argument of `spur_reply`, and the reminder for that session stays off until you turn it back on.
 
-## 装法
+It is a standalone bundle that lives outside the DSH source tree. Installing it only touches the user profile directory (`package.json`, `node_modules` and the lockfile under `$DSH_HOME/profiles/<profile>`); the DSH repository itself is never modified.
 
-需要 DeepSeek Harness `>= 0.2.2-rc.4`。
+## Install
 
-从 GitHub 源码安装：
+Requires DeepSeek Harness `>= 0.2.2-rc.4`.
+
+From the GitHub source:
 
 ```
 dsh plugin --profile web add github:kingzyt/dsh-spur
 ```
 
-装在本地开发目录（改完即生效，适合改代码时用）：
+From a local development directory (edits take effect after a reload):
 
 ```
 dsh plugin --profile web add D:\projects\dsh-plugins\spur
 ```
 
-也可以让会话里的 `plugin_manager` 工具装（`install_bundle`，target 传目录绝对路径或 `github:kingzyt/dsh-spur`），或在 GUI 的 Plugins 页面选「添加本地目录」。
+You can also use the `plugin_manager` tool from a session (`install_bundle`, with an absolute directory path or `github:kingzyt/dsh-spur`), or choose “Add local directory” on the Plugins page.
 
-装好之后的行名（宿主层）是 `spur`；包名是 `@kingzyt/dsh-spur`。
+The installed row is `spur`; the package name is `@kingzyt/dsh-spur`.
 
-## 配套插件：上下文工具
+## Companion plugin: context tools
 
-本插件的提醒会提到 `context_usage` 与 `compact_context`，「连续没动静就主动压缩」那一项也依赖宿主的压缩服务；这两样都由配套插件提供：
+The reminder mentions `context_usage` and `compact_context`, and the “compact after a few silent reminders” option uses the host compaction service. Both come from the companion plugin:
 
-**[kingzyt/dsh-context-tools](https://github.com/kingzyt/dsh-context-tools)**（包名 `@kingzyt/dsh-context-tools`）
+**[kingzyt/dsh-context-tools](https://github.com/kingzyt/dsh-context-tools)** (package `@kingzyt/dsh-context-tools`)
 
-完整能力建议两个一起装：
+For the full feature set install both:
 
 ```
 dsh plugin --profile web add github:kingzyt/dsh-context-tools
 dsh plugin --profile web add github:kingzyt/dsh-spur
 ```
 
-不装也能用：提醒文案会自动改成不提工具名的版本，主动压缩降级为跳过（只写一条警告日志），其余功能照常。
+It works without the companion plugin: the reminder text switches to a variant that names no tools, auto-compaction degrades to a single warning log, and everything else keeps working.
 
-## 开关与停止
+## Switch and stopping
 
-- **默认关闭**。右侧面板里每个会话各有一个开关，开不开由你决定；关着的会话一条提醒都不会收到。
-- 打开之后，每个正常结束的回合（`turn/end` 且 `reason.kind === 'completed'`）都会在间隔之后被提醒一次，没有次数上限。提醒之间如果它又停下，就继续排下一条。
-- **停止靠三个标签**：会话主智能体调用 `spur_reply`，`reply` 参数填「已经完成所有任务」（做完了）、「进行不下去」（确实卡住）或「暂停」（等你回来才能继续）。三种都会把本会话的提醒关掉，而且你之后再说新话也不会自动恢复——要恢复得在面板里手动重新打开开关（重新打开会同时清掉这个标签）。
-- 面板里手动关掉开关是另一条停止路径，作用相同：不再提醒，直到你重新打开。
+- **Off by default.** Each session has its own switch in the right sidebar; a session with the switch off never receives a reminder.
+- Once on, every completed turn (`turn/end` with `reason.kind === 'completed'`) is followed by a reminder when the session goes idle, with no cap on the number of reminders. If it stops again between reminders, the next one is queued.
+- **Three labels stop it**: the main agent calls `spur_reply` with `reply` set to 「已经完成所有任务」 (done), 「进行不下去」 (genuinely blocked) or 「暂停」 (waiting for the user). All three switch this session's reminders off, and a later user message does not bring them back — reopen the switch in the panel to resume (reopening also clears the label).
+- Turning the switch off in the panel is the other stop path, with the same effect: no reminders until you turn it back on.
 
-它不读回复文本，不往系统提示词里写任何东西，也不解释自己的机制。插件与模型之间只有两个通道：定时提醒，和 `spur_reply` 这个标签入口。
+The plugin never reads the reply text, never writes to the system prompt, and never explains its own machinery. There are exactly two channels between the plugin and the model: the reminder, and the `spur_reply` label entry.
 
-## 提醒里只有两条内容
+## The reminder has two items
 
-提醒就是这段话，没有别的：
+The reminder is exactly this, nothing else:
 
 ```
 【保活提醒】你停下来了，「全部任务」确定完成了吗？
@@ -59,11 +61,11 @@ dsh plugin --profile web add github:kingzyt/dsh-spur
 2. 上下文到 60% 以上才需要担心预算：先用 context_usage 查真实占用。60% 以前不用焦虑，上下文够用；流程要求压缩时（例如开始新的一步、切换任务）照流程用 compact_context 压，不受这个百分比限制。
 ```
 
-第 2 条按工具注册表动态变化：两个上下文工具都在才提两个工具名；只有查询工具就只说查询；都没有就只说「60% 以上才需要担心预算」，不写一个调不到的工具名。60% 这个数可以在面板里改（`compactFloorPercent`）。这条只是「不用为预算焦虑」的门槛，不是压缩许可：流程（`/multi-step-plan` 每步开工）要求压缩时照流程压，提醒不会挡它。
+The second item follows the tool registry: both context tools registered names both; only the reader registered names only the reader; neither registers only “60% 以上才需要担心预算”, never a tool that cannot be called. The percentage is editable in the panel (`compactFloorPercent`). It is a “stop worrying about the budget” threshold, not a compaction permission: a flow (`/multi-step-plan`, at the start of every step) that wants to compact still compacts, and the reminder does not block it.
 
-### 自动任务模式（开关）
+### Auto-task mode (a switch)
 
-打开之后，每条提醒在这两条后面再追加一段固定文本，逐字如下：
+When it is on, every reminder appends a fixed paragraph after those two items, verbatim:
 
 ```
 一直做到最后一步，中途不用问我，除非遇到原则性的分歧无法决断，必须要问我，才问我问题，但仅仅把问题问出来，然后停止即可，因为我也没法回复
@@ -73,92 +75,92 @@ dsh plugin --profile web add github:kingzyt/dsh-spur
 遇到要不要拆的情况，自行判断，不用问我
 ```
 
-插件不判断当前是不是多步任务，只看这个开关。面板里「发给 AI 的提醒」会把这整段一起显示出来。
+The plugin does not guess whether the current task is a multi-step one; it only looks at the switch. The “Message sent to the AI” block in the panel shows the whole text.
 
-这段文字不是写死的：面板里有一个可编辑的文本框（`autoTaskHint`），默认就是上面这几行。改完自动保存、立即对后续提醒生效；点「恢复默认」会换回内置版本。
+That text is editable: the panel has a text area (`autoTaskHint`) whose default is the paragraph above. Edits save themselves and apply to the following reminders; “Reset to defaults” restores the built-in text.
 
-## 空闲就提醒（事件驱动 + 兜底巡检）
+## Idle-driven reminders (events plus a watchdog)
 
-会话每次从「运行中」回到「空闲」，插件就在收到 `agent/status`（状态变成 `idle`）的那一拍发提醒，像内置目标那样一轮接一轮，直到主智能体用停用标签结束、或者你关掉开关。
+Every time the session goes from running to idle, the plugin sends the reminder on the `agent/status` transition to `idle`, round after round like the built-in goal driver, until the main agent stops it with a label or you turn the switch off.
 
-- 只有正常结束的回合算数（`turn/end` 的 `completed`）；被中止、报错的回合不戳它。
-- 会话还在跑、子代理在跑、收件箱里有别人的消息时照旧让路。
-- 同一会话两条提醒之间至少隔 2 分钟（面板里可改），避免「回合瞬间结束」把提醒打成一串。
-- **兜底巡检**：每隔 60 秒扫一遍被监视的会话，发现有开着、空闲、没有待办计时器的会话就补一次检查并提醒。事件丢了、插件刚重载、会话在你打开面板之前就停着——这些情况都由它兜住，不会再出现「开着却一整天没动静」。
+- Only completed turns count (`turn/end` with `completed`); aborted and failed turns are left alone.
+- The reminder steps aside while the session is running, while a subagent runs, or while the inbox holds a message from someone else.
+- Two reminders for one session are at least 2 minutes apart (configurable in the panel), so a burst of instant turns cannot produce a burst of reminders.
+- **Watchdog**: every 60 seconds the plugin sweeps the watched sessions and, for any session that is on, idle and has no pending timer, performs one check and reminder. Lost events, a just-reloaded plugin, a session that stopped before you opened the panel — all of them are caught here, so “switch on but silent all day” cannot happen again.
 
-## 连续没动静就自动压缩
+## Compaction after silent reminders
 
-参数 `compactAfterIdleNudges`（默认 3，0 表示不做）。含义：连续 N 次提醒之间，一次工具动作都没发生——说明会话大概被上下文压住了，叫也懒得动。
+Option `compactAfterIdleNudges` (default 3, `0` disables). Meaning: N reminders in a row passed with not a single tool call, which looks like a session squeezed by its context that no longer bothers to move.
 
-到第 N+1 次该提醒的时候，插件会先调宿主的压缩服务把会话压一次（`compactNow`，把此前历史收成一条摘要检查点），然后在干净上下文里发那条提醒。真有动作（任何 `tool/result`）或者用户说话了，计数就清零，不会提前压。
+At the (N+1)-th reminder the plugin first asks the host compaction service to compact the session (`compactNow`, folding earlier history into one summary checkpoint), then sends that reminder into the clean context. Any real work (any `tool/result`) or a user message resets the counter, so a session that is making progress is never compacted early.
 
-没有压缩服务的部署（宿主层没挂 `ctx.compaction`）只写一条警告日志，然后照常提醒，不会因为压缩不了就卡住。这个压缩服务在本机由 `@local/dsh-context-tools` 这个包提供的宿主层后端支撑。
+A deployment without a compaction service (no `ctx.compaction` in the host plane) logs one warning and keeps reminding; it never stalls because compaction is unavailable. On this machine that service is provided by the host-plane backend of `@kingzyt/dsh-context-tools`.
 
-## 任务结束后自动关机（默认关闭）
+## Shutdown after the task ends (off by default)
 
-面板里有个开关：打开之后，主智能体用任意一个停用标签（完成 / 进行不下去 / 暂停）结束任务时，插件会在**一个提醒间隔之后**再检查一次——如果那时开关还开着、停用标签还在（也就是你没有手动重新打开它），就执行关机命令。
+There is a switch in the panel: when it is on and the main agent ends the task with any stop label (done / blocked / paused), the plugin checks once more **one gap later** — if the switch is still on and the label is still there (you did not reopen it), it runs the shutdown command.
 
-- Windows 上执行 `shutdown /s /t 60`：留 60 秒宽限；这期间面板上会出现倒计时和「撤销关机」按钮，点一下执行 `shutdown /a`，也可以直接在命令行里 `shutdown /a`。宽限秒数可以在配置里改（`shutdownGraceSeconds`）。
-- 一个停用标签只触发一次；在检查之前重新打开开关会取消它；关机已经发起但还在宽限期里时，重新打开开关也会顺手撤销。
-- 只在 Windows 上实现；其他平台只写一条警告日志，不会关机。
-- `shutdownDryRun` 打开时只记日志、不真的执行，用来试开关或跑冒烟（撤销也走干跑）。
+- On Windows it runs `shutdown /s /t 60`: a 60-second grace period during which the panel shows a countdown and a “Cancel shutdown” button that runs `shutdown /a`; the command line works too. The grace length is configurable (`shutdownGraceSeconds`).
+- One stop label triggers it once; reopening the switch before the check cancels it, and reopening during the grace period also aborts it.
+- Implemented on Windows only; other platforms log one warning and do not shut down.
+- `shutdownDryRun` logs instead of executing, for trying the switch or running the smoke tests (cancellation follows the same dry run).
 
-## 右侧的配置面板
+## The settings panel in the right sidebar
 
-宿主机半边注册了一个右侧栏页签（类型 `spur`），页面在右侧工具区的「指南」页里点「保活提醒」即可打开，打开后作为该会话的页签留着。面板内容：
+The host half registers a right-sidebar tab (kind `spur`); open it from “会话保活提醒” on the sidebar's guide page, where it stays as a tab for that session. The panel contains:
 
-- **本会话开关**：默认关闭；打开即开始计时。
-- **状态**：会话在不在跑、有没有排定提醒、这个会话已经提醒过几次；主智能体声明停用后会显示是「全部完成」「进行不下去」还是「暂停」。
-- **立即提醒一次**：会话启用且空闲时才能按，用来当场确认插件还活着。
-- **发给 AI 的提醒**：面板里直接显示这条消息的原文。改参数、翻开关时这里立刻跟着变，约半秒后改动自动保存、提醒真正按新内容发送；不用猜它到底对模型说了什么。
-- **提醒记录**：本会话的**探查次数**（定时检测了多少次，包含到点但没发提醒的那些）、**提醒次数**，以及**最近三次提醒的时间**（时:分:秒）。计数是本次运行内累计的：你发新消息不会清零，刷新页面也不会丢；只有插件重载或 DSH 重启才清零。
-- **自动任务模式**：一个开关加一个可编辑的文本框。打开后每条提醒末尾原样追加文本框里的内容，默认是多步任务那套要求；「恢复默认」换回内置文本。开关由你决定，插件不判断当前是不是多步任务。
-- **全局参数**：压缩底线、连续几次提醒没动静就主动压缩（0 表示不做）、两条提醒之间至少隔几分钟、开启后的反悔期秒数，以及「任务结束后自动关机」「自动任务模式」两个开关和那段可编辑的追加提示词。改完约半秒自动保存并立即对提醒生效，底部只留「恢复默认」。关机发起后的宽限期内，本会话区块会出现倒计时和「撤销关机」按钮。
+- **This session's switch**: off by default; turning it on starts the countdown.
+- **Status**: whether the session is running, whether a reminder is scheduled, how many reminders this session has had; after the main agent stops it, whether it was “done”, “blocked” or “paused”.
+- **Nudge once now**: enabled only while the session is on and idle, to confirm the plugin is alive.
+- **Message sent to the AI**: shows the exact text of the next reminder. Editing a parameter or flipping a switch updates it immediately; about half a second later the change saves itself and the reminder really goes out with it.
+- **Records**: this session's **probe count** (timer checks, including those that did not end in a reminder), **reminder count**, and the **times of the last three reminders** (hour:minute:second). The counts are cumulative for this run: a new user message does not reset them and a page refresh does not lose them; only a plugin reload or a DSH restart resets them.
+- **Auto-task mode**: one switch plus an editable text area; the text area's content is appended verbatim to every reminder and “Reset to defaults” restores the built-in text. The switch is yours; the plugin does not judge whether this is a multi-step task.
+- **Global parameters**: budget worry threshold, compaction after N silent reminders (`0` disables), minimum gap between reminders, cool-down after switching on, plus the shutdown-after-the-task switch, auto-task mode and its editable text. Changes save themselves and apply to reminders immediately; the footer only has “Reset to defaults”. While a shutdown is inside its grace period the session block shows a countdown and a “Cancel shutdown” button.
 
-数据落点都在 profile 目录下的 `spur/` 里（路径通过宿主服务 `ctx.get('profileContext').dir` 解析，进程里没导出 `DSH_PROFILE_DIR` 也不影响）：
+Everything is stored under `spur/` inside the profile directory (resolved through the host service `ctx.get('profileContext').dir`, so it works even when `DSH_PROFILE_DIR` is not exported into the process):
 
-- `settings.json`：面板保存的全局参数，是插件自己的数据文件，不是 profile 的 `cordis.patch.yml`。所以 `cordis.patch.yml` 里那一行不带 config，面板保存过的值优先于行配置与代码默认值。
-- `records.json`：按会话 id 记的开关、停用标签、探查/提醒次数和最近三次提醒时间，改动后几百毫秒自动落盘，插件重载或 DSH 重启后原样恢复。
+- `settings.json`: the global parameters saved from the panel. It is the plugin's own data file, not the profile's `cordis.patch.yml` — which is why the patch row carries no config and the saved values win over row config and code defaults.
+- `records.json`: per-session switch, stop label, probe/reminder counts and the last three reminder times, written a few hundred milliseconds after every change and restored after a plugin reload or a DSH restart.
 
-面板通过两条路由跟宿主半边打交道：`GET /api/spur.state`、`POST /api/spur.action`（`config` / `preview` / `session` / `nudge` / `shutdown-cancel`）。
+The panel talks to the host half over two routes: `GET /api/spur.state` and `POST /api/spur.action` (`config` / `preview` / `session` / `nudge` / `shutdown-cancel`).
 
-## 排除项
+## Exclusions
 
-- **子代理还在跑**：到点时先不提醒，隔一个间隔再看；等这棵会话树里所有子代理都空闲了，才提醒主会话。
-- 会话里有当前目标（goal）不影响提醒：开关打开就照常催，目标自己也在驱动是两码事，用户要的是「别停」。
-- 子智能体会话本身（`origin === 'subagent'` 或 `delegationDepth > 0`）：它自己不会收到提醒，提醒由父会话负责。
-- 用户按停止、报错、被中止结束的回合：只有 `reason.kind === 'completed'` 的回合才进入判断。
-- 会话正在跑的时候：计时只在回合结束时排，到点那一刻智能体还在跑就直接跳过，等这个回合结束再重排。手动提醒也一样，运行中按下去会被拒绝，按钮同时是禁用的。面板上的运行状态取自会话快照，是实时的。
+- **A subagent still running**: no reminder yet; check again after one gap, and only once every subagent in the tree is idle does the main session get its reminder.
+- A current goal does not suppress the reminder: with the switch on it keeps nudging; a goal driving as well is simply two drivers, and the user asked for “do not stop”.
+- Subagent sessions themselves (`origin === 'subagent'` or `delegationDepth > 0`): they never receive reminders; the parent session handles them.
+- Turns the user stopped, that failed, or were aborted: only `turn/end` with `reason.kind === 'completed'` enters the judgment.
+- While the session is running: the timer is armed when the turn ends, and a check that finds the agent still running is skipped until the next turn ends. Manual reminders behave the same way — the button is disabled and a call is refused while running. The running state in the panel is live from the session snapshot.
 
-细节见 [docs/DETAIL.md](docs/DETAIL.md)。
+Details are in [docs/DETAIL.md](docs/DETAIL.md).
 
-## 目录
+## Layout
 
-| 路径 | 作用 |
+| Path | Purpose |
 |---|---|
-| `cordis.patch.yml` | 本包向组合树插入的行，只有 `insert`，不覆盖任何随附行 |
-| `src/index.js` | 宿主半边：`spur_reply` 工具、计时、提醒、面板路由 |
-| `client.js` | 界面半边：右侧工具区的页签与配置面板 |
-| `scripts/smoke.mjs` | 脱离 harness 的冒烟检查（含工具与面板路由） |
-| `scripts/client-smoke.mjs` | 界面半边的离线检查（注册与渲染结构） |
-| `locale/`、`icon.svg` | 展示元数据与图标（中文、英文两套） |
-| `docs/DETAIL.md` | Plugins 页面显示的说明文档 |
+| `cordis.patch.yml` | The rows this bundle inserts; only `insert`, never an override of a shipped row |
+| `src/index.js` | Host half: the `spur_reply` tool, timers, reminders, panel routes |
+| `client.js` | Client half: the right-sidebar tab and its panel |
+| `scripts/smoke.mjs` | Offline smoke check (tools and panel routes included) |
+| `scripts/client-smoke.mjs` | Offline check of the client half (registration and render shapes) |
+| `locale/`, `icon.svg` | Display metadata and icon (Chinese and English) |
+| `docs/DETAIL.md` | The document shown on the Plugins page |
 
-## 验证
+## Verification
 
 ```
 node scripts/smoke.mjs
 node scripts/client-smoke.mjs
 ```
 
-`smoke.mjs` 用桩上下文加载 `src/index.js`，喂会话事件、跑真实计时器，直接调用 `spur_reply` 与面板那两条路由，断言：默认关闭时不提醒、打开后到点提醒且文案只有那两条、连续停就有连续提醒、回复「已经完成所有任务」后彻底安静（用户再说话也不恢复）、回复「进行不下去」与「暂停」同样关闭且面板状态分别是 blocked / paused、回复别的标签继续提醒、面板重新打开会清掉停用标签、面板关掉后不再提醒且手动提醒被拒绝、自动关机（默认关不排；打开后一个间隔检查并执行，干跑只记日志；暂停标签也触发；检查前重新打开会取消；发起后在宽限期内可以撤销，重新打开开关也会撤销）、中止的回合不提醒、子会话本身不提醒、有目标的会话照样提醒、子代理在跑时不提醒并等它跑完再提醒、运行中到点让路、不往系统提示词里写任何东西、工具面只有 `spur_reply` 一个、上下文工具在不在时提醒文案的三种写法、60% 底线可配置、连续 N 次没动静时主动压缩一次（含 0 关闭、工具动作清零、没有压缩服务时降级）、面板读状态（含「发给 AI 的提醒」原文预览、探查/提醒计数、最近三次提醒时间）、保存配置（立即生效、写进设置文件、下一次加载生效）、立即提醒一次、运行中拒绝手动提醒、没有 `connection` 服务时只有提醒没有面板、以及非法配置回落默认值。
+`smoke.mjs` loads `src/index.js` with a stub context, feeds session events, runs real timers and calls `spur_reply` and the two panel routes directly. It asserts: no reminder while the switch is off; a reminder after a completed turn once it is on; only the two items in the text; repeated reminders while the session keeps stopping; total silence after 「已经完成所有任务」 (even when the user speaks again); the same silence with blocked and paused, with the panel showing each state; other labels keep reminding; reopening the panel clears the stop label; switching off stops reminding and refuses manual nudges; auto-shutdown (not scheduled while off; one check and execute when on, dry-run logs only; paused also triggers; reopening before the check cancels; a cancel is possible during the grace period and reopening also aborts it); aborted turns are not poked; subagent sessions are not poked; sessions with a goal are still nudged; a running subagent defers the reminder until it finishes; a running session makes way; nothing is written to the system prompt; the tool surface is only `spur_reply`; the three reminder variants for the context-tool registry; the configurable threshold; auto-compaction after N silent reminders (including 0 to disable, tool activity resetting the counter, and the degraded path without a compaction service); panel state (including the reminder preview, probe/reminder counts and the last three times); saving settings (immediate effect, written to disk, restored on the next load); nudge once now; refusing a manual nudge while running; working without a `connection` service (reminders but no panel); and invalid configuration falling back to defaults.
 
-`client-smoke.mjs` 用桩 `window.__ModuleLoader__` 与桩 React 加载 `client.js`，断言模块 id、注入的服务、页签类型与指南入口、页签主体注册、中英词条键集一致，以及面板的首屏、默认关闭、已启用、已声明完成、运行中、缺少上下文工具这几种渲染都返回正常结构。
+`client-smoke.mjs` loads `client.js` with a stub `window.__ModuleLoader__` and stub React, then asserts the module id, injected services, tab type and guide entry, tab body registration, matching dictionary key sets for both languages, and that the first screen, off, on, stopped, running and missing-context-tools renders all return a sane structure.
 
-它覆盖不到的部分：浏览器里的真实渲染与点击、`/api` 路由的鉴权往返、真实的 `agent.followup()` 注入与会话日志。刷新页面后可以在右侧工具区的「指南」页里看到「保活提醒」入口。
+What it does not cover: real rendering and clicks in the browser, authentication on the `/api` routes, real `agent.followup()` delivery and the session log. After a page refresh the “会话保活提醒” entry appears on the sidebar's guide page.
 
-## 改代码之后
+## After changing the code
 
-包里没有构建步骤，源码就是加载的模块。改完 `src/index.js` 不一定要重启：本机实测，改一次 profile 补丁里 `spur` 的配置（哪怕改完再改回来）会触发条目重载，模块被重新导入，新代码当场生效。如果哪次发现没生效，重启 DSH 一定生效。
+There is no build step: the source is the loaded module. Changing `src/index.js` does not always require a restart — on this machine, editing the `spur` row config in the profile patch (even editing it back) reloads the entry and re-imports the module, so the new code takes effect immediately. If a change ever does not appear, a DSH restart always applies it.
 
-界面半边 `client.js` 由浏览器加载，改完需要刷新页面；`dsh.client` 清单的变化同样要刷新页面才进模块表。设置存 `<profile>/spur/settings.json`，提醒记录存 `<profile>/spur/records.json`，都与 `cordis.patch.yml` 无关；没保存的草稿存在浏览器的 `localStorage` 里，切页签或刷新页面都不会丢。
+The client half `client.js` is loaded by the browser and needs a page refresh; a change to the `dsh.client` manifest also needs a refresh before it enters the module table. Settings live in `<profile>/spur/settings.json` and records in `<profile>/spur/records.json`, both independent of `cordis.patch.yml`; unsaved drafts live in the browser's `localStorage` and survive tab switches and refreshes.
