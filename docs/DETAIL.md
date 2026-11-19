@@ -102,6 +102,17 @@
 | `idleGapMinutes` | `2` | 两条提醒之间至少隔多少分钟 |
 | `watchdogSeconds` | `60` | 兜底巡检周期；事件丢了也能补一次检查 |
 
+## 配套插件：上下文工具
+
+本插件的提醒会提到 `context_usage` 与 `compact_context`，「连续没动静就主动压缩」那一项也依赖宿主的压缩服务（`ctx.compaction`）。这两样由配套插件 [kingzyt/dsh-context-tools](https://github.com/kingzyt/dsh-context-tools) 提供（包名 `@kingzyt/dsh-context-tools`），建议两个一起安装：
+
+```
+dsh plugin --profile web add github:kingzyt/dsh-context-tools
+dsh plugin --profile web add github:kingzyt/dsh-spur
+```
+
+不装也能用：没有这两个工具时，提醒第二条会自动换成不提工具名的写法；没有压缩服务时，主动压缩只写一条警告日志并照常提醒。其余功能与我依赖无关的部分都不受影响。
+
 ## 限制
 
 - 插件在进程里计时，但开关、停用标签与提醒记录会写进 profile 目录的 `records.json`：刷新页面、插件重载、DSH 重启后都能恢复；DSH 重启期间没发出去的提醒不会补发。

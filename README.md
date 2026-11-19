@@ -24,6 +24,21 @@ dsh plugin --profile web add D:\projects\dsh-plugins\spur
 
 装好之后的行名（宿主层）是 `spur`；包名是 `@kingzyt/dsh-spur`。
 
+## 配套插件：上下文工具
+
+本插件的提醒会提到 `context_usage` 与 `compact_context`，「连续没动静就主动压缩」那一项也依赖宿主的压缩服务；这两样都由配套插件提供：
+
+**[kingzyt/dsh-context-tools](https://github.com/kingzyt/dsh-context-tools)**（包名 `@kingzyt/dsh-context-tools`）
+
+完整能力建议两个一起装：
+
+```
+dsh plugin --profile web add github:kingzyt/dsh-context-tools
+dsh plugin --profile web add github:kingzyt/dsh-spur
+```
+
+不装也能用：提醒文案会自动改成不提工具名的版本，主动压缩降级为跳过（只写一条警告日志），其余功能照常。
+
 ## 开关与停止
 
 - **默认关闭**。右侧面板里每个会话各有一个开关，开不开由你决定；关着的会话一条提醒都不会收到。

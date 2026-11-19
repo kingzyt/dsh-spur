@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Session keep-alive",
-    "description": "Reminds a stopped session to carry on, on a timer; each session has its own switch in the right sidebar, and the main agent ends it with a reply label.",
+    "description": "Reminds a stopped session to carry on when it goes idle; each session has its own switch in the right sidebar, and the main agent ends it with a reply label. Install it together with the companion context-tools plugin.",
     "detail": "docs/DETAIL.md"
   }
 }
