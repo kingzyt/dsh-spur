@@ -772,7 +772,9 @@ const WAIT = 220
   const exposed = h.tools.filter((tool) => tool.name !== 'spur_diag')
   check('tools: exactly one registration', exposed.length, 1)
   check('tools: name', exposed[0]?.name, 'spur_reply')
-  check('tools: required reply parameter', exposed[0]?.parameters?.reply?.required, true)
+  check('tools: parameters are an object schema', exposed[0]?.parameters?.type, 'object')
+  check('tools: reply is a string property', exposed[0]?.parameters?.properties?.reply?.type, 'string')
+  check('tools: required reply parameter', exposed[0]?.parameters?.required?.includes('reply'), true)
 }
 
 // ── 提醒里的预算建议跟随上下文工具的存在 ─────────────────────────────────────

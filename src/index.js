@@ -821,11 +821,15 @@ export function apply(ctx, config = {}) {
       '只在回复正文里说「完成了」不会关掉提醒，要停就用本工具填标签。',
     ].join(''),
     parameters: {
-      reply: {
-        type: 'string',
-        required: true,
-        description: '当前状态标签；「已经完成所有任务」表示做完，「进行不下去」表示确实卡住，「暂停」表示等用户回来再做，其他内容表示还要继续。',
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        reply: {
+          type: 'string',
+          description: '当前状态标签；「已经完成所有任务」表示做完，「进行不下去」表示确实卡住，「暂停」表示等用户回来再做，其他内容表示还要继续。',
+        },
       },
+      required: ['reply'],
     },
     output: {
       schema: {
